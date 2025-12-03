@@ -1,4 +1,4 @@
-
+﻿
 namespace DemoChatSignalR.Server
 {
     public class Program
@@ -6,7 +6,15 @@ namespace DemoChatSignalR.Server
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowLocalhost",
+                    policy => policy
+                        .WithOrigins("http://localhost:41099")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials());
+            });
             // Add services to the container.
 
             builder.Services.AddControllers();
@@ -21,6 +29,8 @@ namespace DemoChatSignalR.Server
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+                app.UseCors("AllowLocalhost");
+
             }
 
             app.UseHttpsRedirection();

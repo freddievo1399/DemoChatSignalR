@@ -17,8 +17,4 @@
     <ProjectReference Include="..\DempChatSignalR.Shared\DempChatSignalR.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>

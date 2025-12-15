@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace DempChatSignalR.Shared
 {
+    [BasePath("api/home/")]
     public interface IHome
     {
         [Post(nameof(CreateRoom))]

@@ -8,19 +8,22 @@ namespace DemoChatSignalR.Server
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowLocalhost",
-                    policy => policy
-                        .WithOrigins("http://localhost:41099")
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials());
+                options.AddPolicy("AllowAll", policy =>
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
             });
+
             // Add services to the container.
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddMemoryCache();
+
+            builder.Services.AddTransient<CacheChatService>();
 
             var app = builder.Build();
 
@@ -29,7 +32,7 @@ namespace DemoChatSignalR.Server
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-                app.UseCors("AllowLocalhost");
+                app.UseCors("AllowAllAllowAll");
 
             }
 

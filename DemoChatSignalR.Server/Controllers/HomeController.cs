@@ -5,12 +5,17 @@ namespace DemoChatSignalR.Server.Controllers
 {
     [ApiController]
     [Route("api/home")]
-    public class HomeController() : ControllerBase, IHome
+    public class HomeController(CacheChatService cacheChatService) : ControllerBase, IHome
     {
         [HttpPost(nameof(CreateRoom))]
-        public Task<ResultOf<InfoRoomDto>> CreateRoom(ReqCreateRoom reqCreateHome)
+        public async Task<ResultOf<InfoRoomDto>> CreateRoom(ReqCreateRoom reqCreateHome)
         {
-            throw new NotImplementedException();
+            var rlt = await cacheChatService.CreateRoomAsync(Guid.NewGuid(),reqCreateHome.NameRoom);
+            if (rlt.Success)
+            {
+                return rlt.Item;
+            }
+            return rlt.Message;
         }
     }
 }

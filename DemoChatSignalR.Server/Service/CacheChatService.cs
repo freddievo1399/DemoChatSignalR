@@ -1,6 +1,9 @@
 ﻿using DempChatSignalR.Shared;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.VisualBasic;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace DemoChatSignalR.Server;
 
@@ -8,6 +11,22 @@ public class CacheChatService(IMemoryCache memoryCache)
 {
     private IMemoryCache MemoryCache => memoryCache;
     private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> _roomLocks = new();
+
+    public async Task<ResultOf<List<RoomChacheModel>>> GetListRoomAsync(int take, int skip)
+    {
+        MemoryCache.TryGetValue("ListRoom", out List<Guid>? listRoom);
+        listRoom = listRoom ?? new List<Guid>();
+        List<RoomChacheModel> rlt = new List<RoomChacheModel>();
+        foreach (var roomGuid in listRoom.Skip(skip).Take(take))
+        {
+            var roomRlt = await GetRoomAsync(roomGuid);
+            if (roomRlt.Success && roomRlt.Item != null)
+            {
+                rlt.Add(roomRlt.Item);
+            }
+        }
+        return rlt;
+    }
     public Task<ResultOf<RoomChacheModel>> GetRoomAsync(Guid RoomGuid)
     {
         MemoryCache.TryGetValue(RoomGuid, out RoomChacheModel? room);
@@ -17,12 +36,29 @@ public class CacheChatService(IMemoryCache memoryCache)
         }
         return Task.FromResult((ResultOf<RoomChacheModel>)room);
     }
-    public async Task<ResultOf<RoomChacheModel>> CreateAsync(Guid GuidRoom, string NameRoom)
+    public async Task<ResultOf<RoomChacheModel>> CreateRoomAsync(Guid GuidRoom, string NameRoom)
     {
         var room = new RoomChacheModel() { TotalCount = 1, Guid = GuidRoom, Name = NameRoom };
+        var roomListRlt = MemoryCache.TryGetValue("ListRoom", out List<Guid>? listRoom);
+        listRoom = listRoom ?? new List<Guid>();
+        listRoom.Add(GuidRoom);
+        MemoryCache.Set("ListRoom", listRoom);
         MemoryCache.Set(GuidRoom, room, TimeSpan.FromMinutes(40));
-        await SentMessSystem(GuidRoom, $"Room {NameRoom} created");
+        await AddMessageAsync(GuidRoom, $"Room {NameRoom} created", "System");
         return room;
+    }
+    public async Task<Result> DeleteRoomAsync(Guid GuidRoom)
+    {
+        var roomRlt = await GetRoomAsync(GuidRoom);
+        if (!roomRlt.Success) return roomRlt.Message;
+        var room = roomRlt.Item;
+        MemoryCache.Remove(GuidRoom);
+
+        for (int i = 0; i < room.TotalCount; i++)
+        {
+            MemoryCache.Remove($"Message_{GuidRoom}_{i}");
+        }
+        return true;
     }
     public async Task<ResultsOf<MessageChacheModel>> GetMessages(Guid GuidRoom, int FromIndex, int ToIndex)
     {
@@ -70,47 +106,8 @@ public class CacheChatService(IMemoryCache memoryCache)
             var messageValue = new MessageChacheModel()
             {
                 Id = messageIndex,
-                IsSystem = false,
-                Message = Message
-            ,
+                Message = Message,
                 UserName = UserName,
-                DateTimeSent = DateTime.UtcNow
-            };
-            MemoryCache.Set($"Message_{GuidRoom}_{messageIndex}", messageValue
-            , TimeSpan.FromMinutes(30));
-            room.TotalCount++;
-            MemoryCache.Set(room.Guid, room, TimeSpan.FromMinutes(30));
-            return messageValue;
-        }
-        catch (Exception ex)
-        {
-            return ex.Message;
-        }
-        finally
-        {
-            roomLock.Release();
-        }
-    }
-    public async Task<ResultOf<MessageChacheModel>> SentMessSystem(Guid GuidRoom, string Message)
-    {
-        var roomRlt = await GetRoomAsync(GuidRoom);
-        if (!roomRlt.Success)
-        {
-            return roomRlt.Message;
-        }
-        var room = roomRlt.Item;
-        var roomLock = _roomLocks.GetOrAdd(GuidRoom, _ => new SemaphoreSlim(1, 1));
-        await roomLock.WaitAsync();
-        try
-        {
-            var messageIndex = room.TotalCount;
-            var messageValue = new MessageChacheModel()
-            {
-                Id = messageIndex,
-                IsSystem = true,
-                Message = Message
-            ,
-                UserName = "Sys",
                 DateTimeSent = DateTime.UtcNow
             };
             MemoryCache.Set($"Message_{GuidRoom}_{messageIndex}", messageValue

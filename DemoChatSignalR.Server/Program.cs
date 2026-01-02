@@ -23,7 +23,7 @@ namespace DemoChatSignalR.Server
 
             builder.Services.AddMemoryCache();
 
-            builder.Services.AddTransient<CacheChatService>();
+            builder.Services.AddScoped<CacheChatService>();
 
             var app = builder.Build();
 

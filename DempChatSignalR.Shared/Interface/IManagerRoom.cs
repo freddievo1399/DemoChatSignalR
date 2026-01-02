@@ -9,9 +9,9 @@ namespace DempChatSignalR.Shared.Interface
 {
     public interface IManagerRoom
     {
-        [Get(nameof(GetDataAll))]
-        Task<ResultsOf<InfoRoomDto>> GetDataAll();
-        [Get(nameof(Delate))]
-        Task<ResultOf<InfoRoomDto>> Delate(Guid GuidRoom);
+        [Get(nameof(GetData))]
+        Task<ResultsOf<InfoRoomDto>> GetData(int take,int skip);
+        [Post(nameof(Delate))]
+        Task<Result> Delate(Guid GuidRoom);
     }
 }

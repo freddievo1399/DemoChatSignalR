@@ -22,10 +22,7 @@ public class InfoMessDto
     public string? Message { get; set; }
     /// <summary>
     /// user name who sent the message
+    /// If System sent the message, this value is "System"
     /// </summary>
     public required string UserName { get; set; }
-    /// <summary>
-    /// messsage is system message
-    /// </summary>
-    public required bool IsSystem { get; set; } = false;
 }

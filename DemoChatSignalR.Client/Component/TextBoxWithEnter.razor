@@ -24,7 +24,7 @@
     public EventCallback<string> ValueChanged { get; set; }
 
     [Parameter]
-    public required Action<string> eventEnter { get; set; }
+    public required EventCallback<string> eventEnter { get; set; }
     private void OnInput(ChangeEventArgs e)
     {
         Value = e.Value?.ToString() ?? "";
@@ -34,7 +34,7 @@
     {
         if (e.Key == "Enter")
         {
-            eventEnter(Value);
+            await eventEnter.InvokeAsync(Value);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿@page "/"
+@inject HttpService<IHome> iHomeService
 <PageTitle>Home</PageTitle>
 <div class="chat-home">
 
@@ -24,10 +25,20 @@
     </div>
 
 </div>
-@code{
+@code {
     public string roomName { get; set; } = "";
-    private void OnEnter(string RoomName)
+    private async Task OnEnter(string RoomName)
     {
-        Console.WriteLine(roomName);
+        var rlt = await iHomeService.Excute(x =>
+            x.CreateRoom(new()
+            {
+                NameRoom = roomName
+            }));
+        if (rlt.Success)
+            Console.WriteLine($@"{rlt.Item.Guid},
+{rlt.Item.Name},
+{rlt.Item.TotalCount}");
+        else Console.WriteLine(rlt.Message);
     }
+}
 }

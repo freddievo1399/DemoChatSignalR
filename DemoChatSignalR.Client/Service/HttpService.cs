@@ -1,0 +1,54 @@
+﻿using DempChatSignalR.Shared;
+using RestEase;
+using System.Threading.Tasks;
+
+namespace DemoChatSignalR.Client
+{
+    public class HttpService<T>(HttpClient httpClient)
+    {
+        readonly T _apiClient = RestClient.For<T>(httpClient);
+        private async Task<V> ExcuteInternal<V>(Func<T, Task<V>> func) where V : Result, new()
+        {
+
+            try
+            {
+                var rlt = await func(_apiClient);
+                return rlt;
+            }
+            catch (ApiException ex)
+            {
+                return new V
+                {
+                    Success = false,
+                    Message = $"{ex.StatusCode}{ex.Content}_{ex.Message}"
+                };
+            }
+            catch (Exception exOrther)
+            {
+                return new V
+                {
+                    Success = false,
+                    Message = $"{exOrther.Message}"
+                };
+            }
+        }
+        public async Task<Result> Excute(Func<T, Task<Result>> func)
+        {
+            return await ExcuteInternal(func);
+        }
+
+        public async Task<ResultOf<V>> Excute<V>(Func<T, Task<ResultOf<V>>> func)
+        {
+            return await ExcuteInternal(func);
+        }
+
+        public async Task<ResultsOf<V>> Excute<V>(Func<T, Task<ResultsOf<V>>> func)
+        {
+            return await ExcuteInternal(func);
+        }
+        public async Task<PagedResultsOf<V>> Excute<V>(Func<T, Task<PagedResultsOf<V>>> func)
+        {
+            return await ExcuteInternal(func);
+        }
+    }
+}

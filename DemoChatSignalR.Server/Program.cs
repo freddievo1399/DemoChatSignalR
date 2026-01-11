@@ -6,12 +6,25 @@ namespace DemoChatSignalR.Server
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", policy =>
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader());
+                options.AddPolicy("DynamicCors", policy =>
+                {
+                    if (corsOrigins != null && corsOrigins.Length > 0)
+                    {
+                        foreach (var item in corsOrigins)
+                        {
+                            Console.WriteLine(item);
+                        }
+                        policy.WithOrigins(corsOrigins);
+                    }
+
+                    policy
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
             });
 
             // Add services to the container.
@@ -28,15 +41,15 @@ namespace DemoChatSignalR.Server
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+            //if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-                app.UseCors("AllowAllAllowAll");
 
             }
-
             app.UseHttpsRedirection();
+            app.UseCors("DynamicCors");
+
 
             app.UseAuthorization();
 

@@ -1,0 +1,40 @@
+﻿<div class="@Class">
+    <input type="text"
+           value="@Value"
+           @oninput="OnInput"
+           class="form-control"
+           @onkeyup="OnKeyUp"
+           required />
+    <label class=@(string.IsNullOrEmpty(Value) ? "" : "active")>
+        @Label
+    </label>
+</div>
+
+@code {
+    /// <summary>
+    /// Class controll with deep: ok
+    /// </summary>
+    [Parameter]
+    public string Class { get; set; } = "floating-input";
+    [Parameter]
+    public string Label { get; set; } = "";
+    [Parameter]
+    public string Value { get; set; } = "";
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public required Action<string> eventEnter { get; set; }
+    private void OnInput(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString() ?? "";
+        ValueChanged.InvokeAsync(Value);
+    }
+    private async Task OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            eventEnter(Value);
+        }
+    }
+}

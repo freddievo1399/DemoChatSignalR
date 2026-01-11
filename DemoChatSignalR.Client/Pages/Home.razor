@@ -1,7 +1,33 @@
 ﻿@page "/"
-
 <PageTitle>Home</PageTitle>
+<div class="chat-home">
 
-<h1>Hello, world!</h1>
+    <div class="intro">
+        <h1>Web Chat Box</h1>
+        <p class="subtitle">
+            Nền tảng trò chuyện thời gian thực – nhanh, gọn;
+        </p>
+        <p class="description">
+            Web Chat Box giúp bạn kết nối và trao đổi thông tin tức thì.
+        </p>
 
-Welcome to your new app.
+        <div class="actions">
+            <TextBoxWithEnter Label="Nhập tên phòng" @bind-Value="roomName" eventEnter="OnEnter" />
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <h3>⚡ Thời gian thực</h3>
+            <p>Tin nhắn được gửi và nhận ngay lập tức.</p>
+        </div>
+    </div>
+
+</div>
+@code{
+    public string roomName { get; set; } = "";
+    private void OnEnter(string RoomName)
+    {
+        Console.WriteLine(roomName);
+    }
+}

@@ -23,12 +23,28 @@ namespace DemoChatSignalR.Client
                     Message = $"{ex.StatusCode}{ex.Content}_{ex.Message}"
                 };
             }
-            catch (Exception exOrther)
+            catch (HttpRequestException ex)
             {
                 return new V
                 {
                     Success = false,
-                    Message = $"{exOrther.Message}"
+                    Message = $"Server / CORS /network:{ex.StatusCode}_{ex.Message}"
+                };
+            }
+            catch (TaskCanceledException ex)
+            {
+                return new V
+                {
+                    Success = false,
+                    Message = $"Timeout: {ex.Message}"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new V
+                {
+                    Success = false,
+                    Message = $"{ex.Message}"
                 };
             }
         }

@@ -1,5 +1,7 @@
 ﻿@page "/"
+@using System.Threading.Tasks
 @inject HttpService<IHome> iHomeService
+@inject NavigationManager Nav
 <PageTitle>Home</PageTitle>
 <div class="chat-home">
 
@@ -12,9 +14,20 @@
             Web Chat Box giúp bạn kết nối và trao đổi thông tin tức thì.
         </p>
 
-        <div class="actions">
-            <TextBoxWithEnter Label="Nhập tên phòng" @bind-Value="roomName" eventEnter="OnEnter" />
-        </div>
+        <EditForm Model="reqCreateRoom" OnValidSubmit="OnValidSubmit">
+            <DataAnnotationsValidator />
+            <div class="actions row">
+                <div class="row">
+                    <TextBoxWithEnter Label="Nhập tên phòng" @bind-Value="reqCreateRoom.NameRoom" />
+                    <ValidationMessage For="() => reqCreateRoom.NameRoom"></ValidationMessage>
+                </div>
+                <div class="row">
+                    <ButtonIconBootstrap Submit ClassCss="btn-submit mx-auto"
+                                         Icon="bi bi-arrow-return-left" IconCss="IconCss"
+                                         Label="Vào phòng" LabelCss="LabelCss" />
+                </div>
+            </div>
+        </EditForm>
     </div>
 
     <div class="features">
@@ -26,19 +39,15 @@
 
 </div>
 @code {
-    public string roomName { get; set; } = "";
-    private async Task OnEnter(string RoomName)
+    public ReqCreateRoom reqCreateRoom { get; set; } = new();
+
+    async Task OnValidSubmit(EditContext editContext)
     {
         var rlt = await iHomeService.Excute(x =>
-            x.CreateRoom(new()
-            {
-                NameRoom = roomName
-            }));
+            x.CreateRoom(reqCreateRoom));
+
         if (rlt.Success)
-            Console.WriteLine($@"{rlt.Item.Guid},
-{rlt.Item.Name},
-{rlt.Item.TotalCount}");
+            Nav.NavigateTo($@"/room/{rlt.Item.Guid}");
         else Console.WriteLine(rlt.Message);
     }
-}
 }

@@ -1,0 +1,9 @@
+﻿.btn-custome {
+    display: inline-flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}

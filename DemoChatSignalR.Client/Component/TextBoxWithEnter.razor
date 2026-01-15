@@ -3,8 +3,7 @@
            value="@Value"
            @oninput="OnInput"
            class="form-control"
-           @onkeyup="OnKeyUp"
-           required />
+           @onkeyup="OnKeyUp"/>
     <label class=@(string.IsNullOrEmpty(Value) ? "" : "active")>
         @Label
     </label>
@@ -32,6 +31,10 @@
     }
     private async Task OnKeyUp(KeyboardEventArgs e)
     {
+        if (string.IsNullOrEmpty(Value))
+        {
+            return;
+        }
         if (e.Key == "Enter")
         {
             await eventEnter.InvokeAsync(Value);

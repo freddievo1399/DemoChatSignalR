@@ -1,4 +1,18 @@
-﻿.chat-home {
+﻿.actions {
+    display: flex;
+    align-items: center;
+}
+::deep .IconCss{
+    color:aliceblue;
+}
+::deep .btn-submit {
+    background-color: #c862eb;
+    max-width:200px;
+}
+::deep .LabelCss{
+    text-align:center;
+}
+.chat-home {
     min-height: 100vh;
     background: linear-gradient(135deg, #eef2ff, #f8fafc);
     display: flex;

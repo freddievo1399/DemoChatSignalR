@@ -1,6 +1,7 @@
 ﻿.floating-input {
+    display: flex;
     position: relative;
-    width: 280px;
+    width: 100%;
     margin: 16px 0;
 }
 

@@ -1,0 +1,56 @@
+﻿@page "/room/{RoomId:guid}"
+@inject NavigationManager nav
+<div class="chat-container">
+    <div class="chat-header">
+        <div class="chat-user">
+            <div class="avatar">A</div>
+            <div class="info">
+                <div class="name">Admin Support</div>
+                <div class="status">● Online</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-messages">
+
+        <div class="message received">
+            <div class="bubble">
+                Xin chào! Tôi có thể giúp gì cho bạn?
+            </div>
+        </div>
+
+        <div class="message sent">
+            <div class="bubble">
+                Chào admin, mình cần hỗ trợ về tài khoản.
+            </div>
+        </div>
+
+        <div class="message received">
+            <div class="bubble">
+                Bạn vui lòng mô tả chi tiết vấn đề nhé.
+            </div>
+        </div>
+
+    </div>
+
+    <div class="chat-input">
+        <input type="text" placeholder="Nhập tin nhắn..." />
+        <button>Gửi</button>
+    </div>
+
+</div>
+
+@code {
+    [Parameter]
+    public Guid? RoomId { get; set; }
+    protected override void OnInitialized()
+    {
+        if (!RoomId.HasValue)
+        {
+            nav.NavigateTo("/");
+            return;
+        }
+
+        base.OnInitialized();
+    }
+}

@@ -9,6 +9,6 @@ namespace DempChatSignalR.Shared;
 
 public class ReqCreateRoom
 {
-    [Required]
-    public required string NameRoom { get; set; } = string.Empty;
+    [Required(ErrorMessage ="Nhập thông tin")]
+    public string NameRoom { get; set; } = string.Empty;
 }

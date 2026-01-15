@@ -11,6 +11,6 @@ namespace DempChatSignalR.Shared
     public interface IHome
     {
         [Post(nameof(CreateRoom))]
-        Task<ResultOf<InfoRoomDto>> CreateRoom(ReqCreateRoom reqCreateHome);
+        Task<ResultOf<InfoRoomDto>> CreateRoom([Body]ReqCreateRoom reqCreateHome);
     }
 }

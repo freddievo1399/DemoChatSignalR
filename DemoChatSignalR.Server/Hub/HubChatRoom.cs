@@ -7,9 +7,14 @@ namespace DemoChatSignalR.Server
 {
     public class HubChatRoom(CacheChatService cacheChatService) : Hub
     {
-        private static HashSet<string> ConnectedUsers = new();
-        private Guid GuidUserInContext => Guid.Parse(Context.Items["GuidUser"]?.ToString() ?? throw new Exception("GuidUser is null"));
-        private Guid roomIdInContext => Guid.Parse(Context.Items["RoomId"]?.ToString() ?? throw new Exception("RoomId is null"));
+        private Guid GuidUserInContext =>
+    Context.Items.TryGetValue("GuidUser", out var val)
+    ? Guid.Parse(val.ToString())
+    : Guid.Empty;
+        private Guid roomIdInContext =>
+    Context.Items.TryGetValue("RoomId", out var val)
+    ? Guid.Parse(val.ToString())
+    : Guid.Empty;
 
         /// <summary>
         /// Sent JoinRoom
@@ -110,6 +115,7 @@ namespace DemoChatSignalR.Server
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             await NotfiMemberGroup(Context.ConnectionId, GuidUserInContext.ToString(), false);
+            await base.OnDisconnectedAsync(exception);
         }
     }
 }

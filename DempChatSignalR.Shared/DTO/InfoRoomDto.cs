@@ -20,4 +20,5 @@ public class InfoRoomDto
     /// total count of messages in the room
     /// </summary>
     public int TotalCount { get; set; } = 0;
+    public List<InfoUser> Users { get; set; } = new();
 }

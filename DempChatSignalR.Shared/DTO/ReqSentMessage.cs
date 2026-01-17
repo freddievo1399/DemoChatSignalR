@@ -8,7 +8,6 @@ namespace DempChatSignalR.Shared;
 
 public class ReqSentMessage
 {
-    public Guid GuidRoom { get; set; }
-    public required string UserName { get; set; }
+    public required string GuidUser { get; set; }
     public required string Message { get; set; }
 }

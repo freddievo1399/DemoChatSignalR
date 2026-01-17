@@ -12,21 +12,6 @@ public class CacheChatService(IMemoryCache memoryCache)
     private IMemoryCache MemoryCache => memoryCache;
     private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> _roomLocks = new();
 
-    public async Task<ResultOf<List<RoomChacheModel>>> GetListRoomAsync(int take, int skip)
-    {
-        MemoryCache.TryGetValue("ListRoom", out List<Guid>? listRoom);
-        listRoom = listRoom ?? new List<Guid>();
-        List<RoomChacheModel> rlt = new List<RoomChacheModel>();
-        foreach (var roomGuid in listRoom.Skip(skip).Take(take))
-        {
-            var roomRlt = await GetRoomAsync(roomGuid);
-            if (roomRlt.Success && roomRlt.Item != null)
-            {
-                rlt.Add(roomRlt.Item);
-            }
-        }
-        return rlt;
-    }
     public Task<ResultOf<RoomChacheModel>> GetRoomAsync(Guid RoomGuid)
     {
         MemoryCache.TryGetValue(RoomGuid, out RoomChacheModel? room);
@@ -38,28 +23,12 @@ public class CacheChatService(IMemoryCache memoryCache)
     }
     public async Task<ResultOf<RoomChacheModel>> CreateRoomAsync(Guid GuidRoom, string NameRoom)
     {
-        var room = new RoomChacheModel() { TotalCount = 1, Guid = GuidRoom, Name = NameRoom };
-        var roomListRlt = MemoryCache.TryGetValue("ListRoom", out List<Guid>? listRoom);
-        listRoom = listRoom ?? new List<Guid>();
-        listRoom.Add(GuidRoom);
-        MemoryCache.Set("ListRoom", listRoom);
+        var room = new RoomChacheModel() { TotalCount = 1, Guid = GuidRoom, Name = NameRoom }; ;
         MemoryCache.Set(GuidRoom, room, TimeSpan.FromMinutes(40));
         await AddMessageAsync(GuidRoom, $"Room {NameRoom} created", "System");
         return room;
     }
-    public async Task<Result> DeleteRoomAsync(Guid GuidRoom)
-    {
-        var roomRlt = await GetRoomAsync(GuidRoom);
-        if (!roomRlt.Success) return roomRlt.Message;
-        var room = roomRlt.Item;
-        MemoryCache.Remove(GuidRoom);
 
-        for (int i = 0; i < room.TotalCount; i++)
-        {
-            MemoryCache.Remove($"Message_{GuidRoom}_{i}");
-        }
-        return true;
-    }
     public async Task<ResultsOf<MessageChacheModel>> GetMessages(Guid GuidRoom, int FromIndex, int ToIndex)
     {
         var roomRlt = await GetRoomAsync(GuidRoom);
@@ -125,4 +94,38 @@ public class CacheChatService(IMemoryCache memoryCache)
             roomLock.Release();
         }
     }
+
+    public async Task<Result> CreateOrUpdateUser(Guid GuidRoom, string UserName, string GuidUser)
+    {
+        var roomRlt = await GetRoomAsync(GuidRoom);
+        if (!roomRlt.Success)
+        {
+            return roomRlt.Message;
+        }
+        var room = roomRlt.Item;
+        var roomLock = _roomLocks.GetOrAdd(GuidRoom, _ => new SemaphoreSlim(1, 1));
+        await roomLock.WaitAsync();
+        try
+        {
+            var usersTemp = room!.Users;
+            var userExist = usersTemp.FirstOrDefault(u => u.Guid == GuidUser);
+            if (userExist == null)
+            {
+                userExist = new InfoUser() { Guid = GuidUser, UserName = UserName };
+                usersTemp.Add(userExist);
+            }
+            room.Users = usersTemp;
+            MemoryCache.Set(GuidRoom, room, TimeSpan.FromMinutes(40));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
+        }
+        finally
+        {
+            roomLock.Release();
+        }
+    }
+
 }

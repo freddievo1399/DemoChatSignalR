@@ -50,7 +50,7 @@ namespace DemoChatSignalR.Server
             app.UseHttpsRedirection();
             app.UseCors("DynamicCors");
 
-
+            app.MapHub<HubChatRoom>("/chatroomHub");
             app.UseAuthorization();
 
 

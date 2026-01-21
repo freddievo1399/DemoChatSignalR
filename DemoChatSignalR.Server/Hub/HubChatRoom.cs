@@ -9,11 +9,11 @@ namespace DemoChatSignalR.Server
     {
         private Guid GuidUserInContext =>
     Context.Items.TryGetValue("GuidUser", out var val)
-    ? Guid.Parse(val.ToString())
+    ? Guid.Parse(val?.ToString() ?? "")
     : Guid.Empty;
         private Guid roomIdInContext =>
     Context.Items.TryGetValue("RoomId", out var val)
-    ? Guid.Parse(val.ToString())
+    ? Guid.Parse(val?.ToString() ?? "")
     : Guid.Empty;
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace DemoChatSignalR.Server
         /// <param name="GuidUser"></param>
         /// <param name="RoomId"></param>
         /// <returns></returns>
-        public async Task<Result> JoinRoom(Guid GuidUser, Guid RoomId)
+        public async Task<Result> JoinRoom(Guid GuidUser, string userName, Guid RoomId)
         {
             try
             {
@@ -34,7 +34,7 @@ namespace DemoChatSignalR.Server
                 {
                     return rlt;
                 }
-                await NotfiMemberGroup(Context.ConnectionId, GuidUser.ToString(), true);
+                await ReqUpdateName(new() { Guid = GuidUser.ToString(), UserName = $"userName" });
                 return Result.Ok();
             }
             catch (Exception ex)
@@ -86,13 +86,14 @@ namespace DemoChatSignalR.Server
             }
         }
         /// <summary>
+        /// Sent NotfiMemberGroup
         /// Receive ReceiveNotfiMemberGroup
         /// </summary>
         /// <param name="connectionId"></param>
         /// <param name="GuidUser"></param>
         /// <param name="isIn"></param>
         /// <returns></returns>
-        private async Task<Result> NotfiMemberGroup(string connectionId, string GuidUser, bool isIn)
+        public async Task<Result> NotfiMemberGroup(string connectionId, string GuidUser, bool isIn)
         {
             try
             {
@@ -117,5 +118,6 @@ namespace DemoChatSignalR.Server
             await NotfiMemberGroup(Context.ConnectionId, GuidUserInContext.ToString(), false);
             await base.OnDisconnectedAsync(exception);
         }
+
     }
 }

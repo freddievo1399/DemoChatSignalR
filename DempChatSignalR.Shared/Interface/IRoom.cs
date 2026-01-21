@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace DempChatSignalR.Shared;
 
+[BasePath("api/room/")]
 public interface IRoom
 {
     [Get(nameof(GetInfoRoom))]
-    Task<ResultOf<InfoRoomDto>> GetInfoRoom(Guid guid);
-    [Get(nameof(GetInfoRoom))]
-    Task<ResultOf<InfoMessDto>> GetInfoRoom(ReqLoadMessageByRange reqLoadMessageByRange);
-
+    Task<ResultOf<InfoRoomDto>> GetInfoRoom([Query]Guid guid);
+    [Get(nameof(GetChatHistory))]
+    Task<ResultsOf<InfoMessDto>> GetChatHistory([Query] ReqLoadMessageByRange reqLoadMessageByRange);
 }

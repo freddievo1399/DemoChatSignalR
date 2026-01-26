@@ -12,6 +12,6 @@ public interface IRoom
 {
     [Get(nameof(GetInfoRoom))]
     Task<ResultOf<InfoRoomDto>> GetInfoRoom([Query]Guid guid);
-    [Get(nameof(GetChatHistory))]
-    Task<ResultsOf<InfoMessDto>> GetChatHistory([Query] ReqLoadMessageByRange reqLoadMessageByRange);
+    [Post(nameof(GetChatHistory))]
+    Task<ResultsOf<InfoMessDto>> GetChatHistory([Body] ReqLoadMessageByRange reqLoadMessageByRange);
 }

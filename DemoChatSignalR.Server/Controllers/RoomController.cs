@@ -7,8 +7,8 @@ namespace DemoChatSignalR.Server.Controllers;
 [Route("api/room")]
 public class RoomController(CacheChatService cacheChatService) : ControllerBase, IRoom
 {
-    [HttpGet(nameof(GetChatHistory))]
-    public async Task<ResultsOf<InfoMessDto>> GetChatHistory([FromQuery] ReqLoadMessageByRange reqLoadMessageByRange)
+    [HttpPost(nameof(GetChatHistory))]
+    public async Task<ResultsOf<InfoMessDto>> GetChatHistory([FromBody] ReqLoadMessageByRange reqLoadMessageByRange)
     {
         var rlt = await cacheChatService.GetMessages(reqLoadMessageByRange.GuidRoom, reqLoadMessageByRange.FromIndex, reqLoadMessageByRange.ToIndex);
         if (!rlt.Success)

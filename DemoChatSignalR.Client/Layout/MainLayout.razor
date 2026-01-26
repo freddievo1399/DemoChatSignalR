@@ -1,3 +1,10 @@
-﻿@inherits LayoutComponentBase
+﻿@using DemoChatSignalR.Client.Component
+@inherits LayoutComponentBase
+<MudThemeProvider />
+<MudPopoverProvider />
 
+<MudDialogProvider CloseButton="false" CloseOnEscapeKey="false" BackdropClick="false" Position="DialogPosition.Center" />
+
+<MudSnackbarProvider />
+<SwalAlert />
 @Body

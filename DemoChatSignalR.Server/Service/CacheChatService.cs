@@ -40,8 +40,9 @@ public class CacheChatService(IMemoryCache memoryCache)
         {
             return "ToIndex must biger than FromIndex ";
         }
-        if (FromIndex < 0 || roomRlt.Item.TotalCount > ToIndex - 1)
+        if (FromIndex < 0 || roomRlt.Item.TotalCount < ToIndex)
         {
+            Console.WriteLine(roomRlt.Item.TotalCount);
             return "Request out range";
         }
         var rlt = new List<MessageChacheModel>();
@@ -59,7 +60,7 @@ public class CacheChatService(IMemoryCache memoryCache)
         }
         return rlt;
     }
-    public async Task<ResultOf<MessageChacheModel>> AddMessageAsync(Guid GuidRoom, string UserName, string Message)
+    public async Task<ResultOf<MessageChacheModel>> AddMessageAsync(Guid GuidRoom, string UserGuid, string Message)
     {
         var roomRlt = await GetRoomAsync(GuidRoom);
         if (!roomRlt.Success)
@@ -76,7 +77,7 @@ public class CacheChatService(IMemoryCache memoryCache)
             {
                 Id = messageIndex,
                 Message = Message,
-                UserName = UserName,
+                UserGuid = UserGuid,
                 DateTimeSent = DateTime.UtcNow
             };
             MemoryCache.Set($"Message_{GuidRoom}_{messageIndex}", messageValue
@@ -94,8 +95,16 @@ public class CacheChatService(IMemoryCache memoryCache)
             roomLock.Release();
         }
     }
-
-    public async Task<Result> CreateOrUpdateUser(Guid GuidRoom, string UserName, string GuidUser)
+    /// <summary>
+    /// 0: no change 
+    /// 1: created
+    /// 2: updated
+    /// </summary>
+    /// <param name="GuidRoom"></param>
+    /// <param name="UserName"></param>
+    /// <param name="GuidUser"></param>
+    /// <returns></returns>
+    public async Task<ResultOf<int>> CreateOrUpdateUser(Guid GuidRoom, string UserName, string GuidUser)
     {
         var roomRlt = await GetRoomAsync(GuidRoom);
         if (!roomRlt.Success)
@@ -108,15 +117,21 @@ public class CacheChatService(IMemoryCache memoryCache)
         try
         {
             var usersTemp = room!.Users;
-            var userExist = usersTemp.FirstOrDefault(u => u.Guid == GuidUser);
+            var userExist = usersTemp.FirstOrDefault(u => u.UserGuid == GuidUser);
             if (userExist == null)
             {
-                userExist = new InfoUser() { Guid = GuidUser, UserName = UserName };
+                userExist = new InfoUser() { UserGuid = GuidUser, UserName = UserName };
                 usersTemp.Add(userExist);
+                MemoryCache.Set(GuidRoom, room, TimeSpan.FromMinutes(40));
+                return 1;
+            }
+            if (userExist.UserName == UserName)
+            {
+                return 0;
             }
             room.Users = usersTemp;
             MemoryCache.Set(GuidRoom, room, TimeSpan.FromMinutes(40));
-            return true;
+            return 2;
         }
         catch (Exception ex)
         {

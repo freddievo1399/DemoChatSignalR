@@ -52,16 +52,38 @@
 
 .message {
     display: flex;
-    margin-bottom: 12px;
+    margin-bottom: 18px;
+    position: relative;
 }
+
 
     .message.sent {
         justify-content: flex-end;
     }
 
+        .message.sent .userName {
+            position: absolute;
+            top: -16px;
+            right: 0px;
+        }
+
     .message.received {
         justify-content: flex-start;
     }
+
+        .message.received .userName {
+            position: absolute;
+            top: -16px;
+            left: 0px;
+        }
+
+    .message.system {
+        justify-content: center;
+    }
+
+        .message.system .userName {
+            display: none !important;
+        }
 
 .bubble {
     max-width: 75%;
@@ -70,12 +92,16 @@
     font-size: 14px;
     line-height: 1.4;
 }
-
 /* Bubble colors */
 .sent .bubble {
     background: #4f46e5;
     color: white;
     border-bottom-right-radius: 4px;
+}
+
+.system .bubble {
+    max-width: 75%;
+    font-size: 10px;
 }
 
 .received .bubble {
@@ -84,6 +110,17 @@
     border-bottom-left-radius: 4px;
 }
 
+/*.sent .userName {
+    background: #4f46e5;
+    color: #1f2937;
+    border-radius: 4px;
+}
+
+.received .userName {
+    background: #e5e7eb;
+    color: #1f2937;
+    border-radius: 4px;
+}*/
 /* Input */
 .chat-input {
     display: flex;

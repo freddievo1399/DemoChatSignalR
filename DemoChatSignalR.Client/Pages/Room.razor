@@ -1,56 +1,427 @@
 ﻿@page "/room/{RoomId:guid}"
+@using System.ComponentModel.DataAnnotations
 @inject NavigationManager nav
+@inject HttpService<IRoom> roomService
+@inject HttpClient httpClient
+@inject SwalAlertService Swal
+@inject IJSRuntime JS
+<script>
+           window.observeScrollEnd = (selecttor, dotNetRef) => {
+                const element = document.querySelector(selecttor);
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+                dotNetRef.invokeMethodAsync("scrollTop");
+            }
+        }, {
+            threshold: 1.0
+        });
+
+        observer.observe(element);
+    };
+        window.chatFunctions = {
+        scrollToElement: (selector,position) => {
+            const element = document.querySelector(selector);
+
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth', // Cuộn mượt
+                    block: position    // Cuộn vừa đủ để nó hiện ra, không đẩy nó lên tận đỉnh
+                });
+            }
+        }
+    };
+</script>
+<PageTitle>Room @(infoRoom?.Name ?? "Loadding")</PageTitle>
+<MudDialog @ref="mudDialog" Visible="false">
+
+    <TitleContent>
+        Nhập tên
+    </TitleContent>
+    <DialogContent>
+        <EditForm id="formsubmit" Model="infoUser" OnValidSubmit="UpdateUser">
+            <DataAnnotationsValidator />
+            <MudTextField @bind-Value="infoUser.UserName" Label="Nhập tên" Variant="Variant.Outlined" />
+            <ValidationMessage For="() => infoUser.UserName"></ValidationMessage>
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Success" form="formsubmit" ButtonType="ButtonType.Submit">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+@* <MudButton OnClick="Cancel">Cancel</MudButton> *@
+@* <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton> *@
 <div class="chat-container">
+    <MudDrawer @bind-Open="isShowMudDrawer" Breakpoint="Breakpoint.Xl" Elevation="1" Variant="@DrawerVariant.Responsive">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Thành viện</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu>
+            @foreach (var user in infoRoom?.Users ?? new())
+                {
+            var userTemp = user;
+            <MudNavLink Match="NavLinkMatch.All" Disabled="user.UserGuid==infoUser.UserGuid"> 
+                @user.UserName
+                    @if (user.IsActive || user.UserGuid==infoUser.UserGuid)
+                    {
+                        <MudIcon Icon="@Icons.Custom.Uncategorized.Radioactive" Color="Color.Primary" />
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Custom.Uncategorized.Radioactive" Color="Color.Default" />
+                    }
+                </MudNavLink>
+            }
+        </MudNavMenu>
+    </MudDrawer>
     <div class="chat-header">
         <div class="chat-user">
-            <div class="avatar">A</div>
+            <div class="avatar">
+                <img src="@($"https://api.dicebear.com/7.x/identicon/svg?seed={infoRoom?.Name ?? "Load"}")" />
+            </div>
             <div class="info">
-                <div class="name">Admin Support</div>
-                <div class="status">● Online</div>
+                <div class="name">@(infoRoom?.Name ?? "Load")</div>
+            </div>
+            <div class="info">
+                <div class="name" @onclick="@ToggleDrawer">Member</div>
+            </div>
+            <div class="ml-auto">
+                <div class="name" @onclick="LoadUser">@(infoUser?.UserName ?? "Load")</div>
             </div>
         </div>
     </div>
 
     <div class="chat-messages">
-
-        <div class="message received">
-            <div class="bubble">
-                Xin chào! Tôi có thể giúp gì cho bạn?
-            </div>
+        <div id="scrollTop" class="system @(hasLoadMess ? "d-none" : "message")">
+            Loading
         </div>
-
-        <div class="message sent">
-            <div class="bubble">
-                Chào admin, mình cần hỗ trợ về tài khoản.
+        @if (hasLoadMess)
+        {
+            <div id="scrollTop" class="message system">
+                @if (messError != string.Empty)
+                {
+                    @messError
+                }
+                else
+                {
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                }
             </div>
-        </div>
 
-        <div class="message received">
-            <div class="bubble">
-                Bạn vui lòng mô tả chi tiết vấn đề nhé.
+        }
+        @foreach (var mess in infoMessDtos)
+        {
+            var GuidUser = mess.UserGuid.ToString();
+            <div class="message @(classFromUser(GuidUser)) @($"mess_id_{mess.Id}")">
+                <div class="bubble">
+                    @mess.Message
+                </div>
+                <div class="userName">
+                    @(NameFromGuidUser(GuidUser))
+                </div>
             </div>
-        </div>
-
+        }
     </div>
-
     <div class="chat-input">
-        <input type="text" placeholder="Nhập tin nhắn..." />
-        <button>Gửi</button>
+        @if (reqSentMessage != null)
+        {
+            <EditForm id="formChatsubmit" class="container" Context="hi" Model="reqSentMessage" OnValidSubmit="SendMessage">
+                <DataAnnotationsValidator />
+                <div class="row">
+                    <MudTextField @bind-Value="reqSentMessage.Message" Label="Nhập nội dung" Class="col-auto" Required Variant="Variant.Outlined" />
+                    <MudButton EndIcon="@Icons.Material.Sharp.KeyboardDoubleArrowRight" Class="col-lg-2 col-4"
+                               Color="Color.Secondary" form="formChatsubmit" ButtonType="ButtonType.Submit">Gửi</MudButton>
+                </div>
+            </EditForm>
+        }
     </div>
-
 </div>
 
+
 @code {
+    #region Models
+    private DotNetObjectReference<Room>? objRef;
+    private bool hasLoadMess = false;
+    private string messError = string.Empty;
+    private bool isShowMudDrawer { get; set; } = false;
+    private ReqSentMessage reqSentMessage;
+    MudDialog mudDialog = new();
+    private HubConnection? hubConnection;
     [Parameter]
     public Guid? RoomId { get; set; }
-    protected override void OnInitialized()
+    private InfoRoomDto? infoRoom;
+    private List<InfoMessDto> infoMessDtos = new();
+    InfoUser infoUser = new() { UserGuid = Guid.NewGuid().ToString(), UserName = "" };
+    #endregion
+
+    private string classFromUser(string UserGuid)
     {
+        if (infoUser.UserGuid == UserGuid) return "sent";
+        if (UserGuid == "System") return "system";
+        return "received";
+    }
+    private string NameFromGuidUser(string UserGuid)
+    {
+        var user = infoRoom!.Users.FirstOrDefault();
+        if (user != null)
+        {
+            return user.UserName;
+        }
+        else
+        {
+            return infoUser.UserName;
+        }
+    }
+
+    protected override async void OnInitialized()
+    {
+        LoadInfoRoom();
+        var isUserSuccess = await LoadInfoUser();
+        if (!isUserSuccess)
+        {
+            LoadUser();
+            return;
+        }
+
+        await Swal.Loading("Loadding");
+        await ConnectionHub();
+
+        await Swal.Close();
+        StateHasChanged();
+    }
+    private async Task InvokeLoadMess()
+    {
+        objRef = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("observeScrollEnd", "#scrollTop", objRef);
+    }
+    private async void ToggleDrawer()
+    {
+        isShowMudDrawer = !isShowMudDrawer;
+        StateHasChanged();
+    }
+
+    #region Load Info Room & User
+    private async void LoadInfoRoom()
+    {
+        await Swal.Loading("Load thông tin phòng");
         if (!RoomId.HasValue)
         {
             nav.NavigateTo("/");
             return;
         }
-
-        base.OnInitialized();
+        var rltRoom = await roomService.Excute(x => x.GetInfoRoom(RoomId.Value));
+        if (!rltRoom.Success)
+        {
+            nav.NavigateTo("/");
+        }
+        infoRoom = rltRoom.Item;
+        await InvokeLoadMess();
+        await Swal.Close();
     }
+    private async void UpdateUser()
+    {
+        await Swal.Loading("Update");
+        await JS.InvokeVoidAsync("localStorage.setItem", "GuidUser", infoUser.UserGuid);
+        await JS.InvokeVoidAsync("localStorage.setItem", "UserName", infoUser.UserName);
+        if (infoRoom == null)
+        {
+            LoadInfoRoom();
+        }
+        if (hubConnection == null)
+        {
+            await ConnectionHub();
+        }
+        JoinRoom();
+        await Swal.Close();
+        await mudDialog.CloseAsync();
+    }
+    private async Task<bool> LoadInfoUser()
+    {
+        var userGuid = await JS.InvokeAsync<string>("eval", "localStorage.getItem('GuidUser')");
+        var userName = await JS.InvokeAsync<string>("eval", "localStorage.getItem('UserName')");
+
+        if (userName == "null" || string.IsNullOrEmpty(userName) || userGuid == "null" || string.IsNullOrEmpty(userGuid))
+        {
+            return false;
+        }
+        infoUser.UserGuid = userGuid;
+        infoUser.UserName = userName;
+        return true;
+    }
+    private async void LoadUser()
+    {
+        await mudDialog.ShowAsync();
+    }
+    [JSInvokable]
+    public async Task scrollTop()
+    {
+        if (!hasLoadMess)
+        {
+            hasLoadMess = true;
+            StateHasChanged();
+            await LoadMore();
+        }
+    }
+    private async Task LoadMore()
+    {
+        var firstMess = infoMessDtos.FirstOrDefault() ?? new()
+        {
+            UserGuid = "",
+            Id = infoRoom.TotalCount - 1
+        };
+        var ToIndex = firstMess.Id;
+        var FromIndex = ToIndex - 5;
+        FromIndex = FromIndex < 0 ? 0 : FromIndex;
+        await Task.Delay(500);
+        var rltRoom = await roomService.Excute(x => x.GetChatHistory(new()
+        {
+            FromIndex = FromIndex,
+            ToIndex = ToIndex,
+            GuidRoom = RoomId!.Value
+        }));
+        if (rltRoom.Success)
+        {
+            if (rltRoom.Items.Count() != 0)
+            {
+                for (int i = 0; i < rltRoom.Items.Count(); i++)
+                {
+                    var item = rltRoom.Items.ElementAt(i);
+                    infoMessDtos.Insert(i, item);
+                }
+                hasLoadMess = false;
+                await JS.InvokeVoidAsync("chatFunctions.scrollToElement", $".mess_id_{firstMess.Id}", "start");
+
+                StateHasChanged();
+            }
+            else
+            {
+                hasLoadMess = true;
+            }
+
+        }
+        else
+        {
+            await Task.Delay(300);
+            hasLoadMess = true;
+            messError = rltRoom.Message;
+        }
+        StateHasChanged();
+    }
+    #endregion
+
+    #region Send Message & Join Room
+    private async Task ConnectionHub()
+    {
+        await Swal.Loading("Kết nói máy chủ");
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(Path.Combine(httpClient!.BaseAddress!.AbsoluteUri, "chatroomHub"))
+        .WithAutomaticReconnect()
+        .Build();
+        hubConnection.On<InfoMessDto>
+    ("ReceiveMessage", ActionReceiveMessage);
+        hubConnection.On<OnlineUserDto>
+            ("ReceiveNotfiMemberGroup", ActionReceiveNotfiMemberGroup);
+        hubConnection.On<InfoUser>
+            ("ResUpdateName", ActionResUpdateName);
+
+        await hubConnection.StartAsync();
+        JoinRoom();
+        NotifyOnline();
+    }
+    private async void SendMessage()
+    {
+        if (string.IsNullOrEmpty(reqSentMessage.Message))
+        {
+            return;
+        }
+        await hubConnection!.SendAsync("SentMessage", reqSentMessage);
+        reqSentMessage.Message = "";
+    }
+    private async void JoinRoom()
+    {
+        await hubConnection!.SendAsync("JoinRoom", new JoinRoomDTO()
+        {
+            GuidUser = Guid.Parse(infoUser.UserGuid),
+            RoomId = RoomId!.Value,
+            userName = infoUser.UserName
+        });
+        reqSentMessage = new() { GuidUser = infoUser.UserGuid, Message = "" };
+    }
+    private async void NotifyOnline()
+    {
+        await hubConnection!.SendAsync("NotfiOnlineUser", new OnlineUserDto()
+        {
+            GuidUser = infoUser.UserGuid,
+            ConnectionId = hubConnection!.ConnectionId!,
+            IsOnline = true
+        });
+    }
+    #endregion
+
+    #region SignalR Action
+    private async void ActionReceiveMessage(InfoMessDto infoMessDto)
+    {
+        if (infoMessDto.UserGuid != "System")
+        {
+            infoMessDtos.Add(infoMessDto);
+            StateHasChanged();
+            await JS.InvokeVoidAsync("chatFunctions.scrollToElement", $".mess_id_{infoMessDto.Id}", "start");
+        }
+        else
+        {
+            var user = infoRoom!.Users.FirstOrDefault(x => infoMessDto.Message!.Contains(x.UserGuid));
+            if (user != null)
+            {
+                infoMessDto.Message = infoMessDto.Message!.Replace(user!.UserGuid, user.UserName);
+                infoMessDtos.Add(infoMessDto);
+
+                StateHasChanged();
+            }
+        }
+    }
+    private async void ActionReceiveNotfiMemberGroup(OnlineUserDto infoOnlUserDto)
+    {
+        if (infoOnlUserDto.GuidUser == infoUser.UserGuid)
+        {
+            if (!infoOnlUserDto.IsOnline)
+            {
+                NotifyOnline();
+            }
+            return;
+        }
+        var userTemp = infoRoom!.Users.FirstOrDefault(x => x.UserGuid == infoOnlUserDto.GuidUser);
+        if (userTemp == null)
+        {
+            LoadInfoRoom();
+            userTemp = infoRoom!.Users.FirstOrDefault(x => x.UserGuid == infoOnlUserDto.GuidUser);
+            userTemp!.IsActive = infoOnlUserDto.IsOnline;
+        }
+        else
+        {
+            userTemp.IsActive = infoOnlUserDto.IsOnline;
+        }
+        StateHasChanged();
+    }
+    private async void ActionResUpdateName(InfoUser infoMessDto)
+    {
+        if (infoMessDto.UserGuid != infoUser.UserGuid)
+        {
+            var userTemp = infoRoom!.Users.FirstOrDefault(x => x.UserGuid == infoMessDto.UserGuid);
+            if (userTemp == null)
+            {
+                userTemp = new() { UserGuid = infoMessDto.UserGuid, UserName = infoMessDto.UserName, IsActive = true };
+                infoRoom!.Users.Add(userTemp);
+            }
+            else
+            {
+                userTemp.UserGuid = infoMessDto.UserGuid;
+                userTemp.UserName = infoMessDto.UserName;
+            }
+        }
+        else
+        {
+            infoUser.UserName = infoMessDto.UserName;
+        }
+        StateHasChanged();
+    }
+    #endregion
 }

@@ -1,0 +1,70 @@
+﻿@using DemoChatSignalR.Client.Component.SwalAlrt
+@using static DemoChatSignalR.Client.SwalAlertService
+@inject SwalAlertService SwalService
+@if (IsVisible)
+{
+    <div class="swal-overlay">
+        <div class="swal-dialog">
+            <div class="swal-body">
+                <span class="swal-title"><strong>@Title</strong> </span>
+                <p>@Message</p>
+            </div>
+            <div class="swal-header">
+                @switch (swalType)
+                {
+                    case SwalType.Loadding:
+                        <SwalLoading />
+                        break;
+                    case SwalType.Warning:
+                        <SwalWarning />
+                        break;
+                    case SwalType.Success:
+                        <SwalSuccess />
+                        break;
+                    default:
+                        break;
+                }
+
+            </div>
+            @if (swalType != SwalType.Loadding)
+            {
+                <div class="swal-footer">
+                    <button class="swal-btn ok" @onclick="OnConfirm">OK</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+@code {
+    private bool IsVisible = false;
+    private string Title = "Xác nhận";
+    private string Message = "";
+    private SwalType swalType = SwalType.Info;
+
+    private string TypeCss => swalType switch
+    {
+        SwalType.Info => "swal-info",
+        SwalType.Warning => "swal-warning",
+        SwalType.Success => "swal-success",
+        SwalType.Error => "swal-error",
+        SwalType.Loadding => "swal-loading",
+        _ => ""
+    };
+    protected override void OnInitialized()
+    {
+        SwalService.OnShow = ShowDialog;
+    }
+    private void ShowDialog(string title, string message, SwalType type)
+    {
+        Title = title;
+        Message = message;
+        IsVisible = type != SwalType.Close;
+        swalType = type;
+        StateHasChanged();
+    }
+    private void OnConfirm(MouseEventArgs args)
+    {
+        IsVisible = false;
+        StateHasChanged();
+    }
+}

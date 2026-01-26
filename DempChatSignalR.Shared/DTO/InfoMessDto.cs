@@ -24,5 +24,5 @@ public class InfoMessDto
     /// user name who sent the message
     /// If System sent the message, this value is "System"
     /// </summary>
-    public required string UserName { get; set; }
+    public required string UserGuid { get; set; }
 }

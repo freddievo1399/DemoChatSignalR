@@ -1,7 +1,9 @@
 ﻿@page "/"
 @using System.Threading.Tasks
+@using MudBlazor
 @inject HttpService<IHome> iHomeService
 @inject NavigationManager Nav
+@inject SwalAlertService Swal
 <PageTitle>Home</PageTitle>
 <div class="chat-home">
 
@@ -18,13 +20,11 @@
             <DataAnnotationsValidator />
             <div class="actions row">
                 <div class="row">
-                    <TextBoxWithEnter Label="Nhập tên phòng" @bind-Value="reqCreateRoom.NameRoom" />
+                    <MudTextField @bind-Value="reqCreateRoom.NameRoom" Label="Nhập tên phòng" Variant="Variant.Outlined" />
                     <ValidationMessage For="() => reqCreateRoom.NameRoom"></ValidationMessage>
                 </div>
                 <div class="row">
-                    <ButtonIconBootstrap Submit ClassCss="btn-submit mx-auto"
-                                         Icon="bi bi-arrow-return-left" IconCss="IconCss"
-                                         Label="Vào phòng" LabelCss="LabelCss" />
+                    <MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Rounded.SubdirectoryArrowLeft" ButtonType="ButtonType.Submit" Color="Color.Primary">Vào phòng</MudButton>
                 </div>
             </div>
         </EditForm>
@@ -43,11 +43,19 @@
 
     async Task OnValidSubmit(EditContext editContext)
     {
+        await Swal.Loading("Đang tạo phòng...");
         var rlt = await iHomeService.Excute(x =>
             x.CreateRoom(reqCreateRoom));
 
         if (rlt.Success)
+        {
+            await Swal.Loading("Đang chuyển");
             Nav.NavigateTo($@"/room/{rlt.Item.Guid}");
-        else Console.WriteLine(rlt.Message);
+            await Swal.Close();
+        }
+        else
+        {
+            await Swal.Error($"Lỗi{rlt.Message}");
+        }
     }
 }

@@ -22,19 +22,21 @@ namespace DemoChatSignalR.Server
         /// <param name="GuidUser"></param>
         /// <param name="RoomId"></param>
         /// <returns></returns>
-        public async Task<Result> JoinRoom(Guid GuidUser, string userName, Guid RoomId)
+        public async Task<Result> JoinRoom(JoinRoomDTO joinRoomDTO)
         {
             try
             {
-                Context.Items["GuidUser"] = GuidUser;
-                Context.Items["RoomId"] = RoomId;
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"ChatRoom_{RoomId}");
-                var rlt = await SentMessage(new() { GuidUser = "System", Message = $"User name: {GuidUser} has join group Chat" });
-                if (!rlt.Success)
+                Context.Items["GuidUser"] = joinRoomDTO.GuidUser;
+                Context.Items["RoomId"] = joinRoomDTO.RoomId;
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"ChatRoom_{joinRoomDTO.RoomId}");
+                var rltUpdateName = await ReqUpdateName(new() { UserGuid = joinRoomDTO.GuidUser.ToString(), UserName = joinRoomDTO.userName, IsActive = true });
+                if (rltUpdateName.Success)
                 {
-                    return rlt;
+                    if (rltUpdateName.Item == 1)
+                    {
+                        var rlt = await SentMessage(new() { GuidUser = "System", Message = $"User name: {joinRoomDTO.GuidUser} has join group Chat" });
+                    }
                 }
-                await ReqUpdateName(new() { Guid = GuidUser.ToString(), UserName = $"userName" });
                 return Result.Ok();
             }
             catch (Exception ex)
@@ -42,19 +44,17 @@ namespace DemoChatSignalR.Server
                 return Result.Error(ex.Message);
             }
         }
-        /// <summary>
-        /// Sent ResUpdateName
-        /// </summary>
-        /// <param name="UserNew"></param>
-        /// <returns></returns>
-        public async Task<Result> ReqUpdateName(InfoUser UserNew)
+        private async Task<ResultOf<int>> ReqUpdateName(InfoUser UserNew)
         {
             try
             {
-                Context.Items["GuidUser"] = UserNew.Guid;
-                var rlt = await cacheChatService.CreateOrUpdateUser(roomIdInContext, UserNew.UserName, UserNew.Guid);
-                await Clients.OthersInGroup($"ChatRoom_{roomIdInContext}").SendAsync("ResUpdateName", UserNew);
-                return true;
+                Context.Items["GuidUser"] = UserNew.UserGuid;
+                var rlt = await cacheChatService.CreateOrUpdateUser(roomIdInContext, UserNew.UserName, UserNew.UserGuid);
+                if (rlt.Success || rlt.Item == 2)
+                {
+                    await Clients.OthersInGroup($"ChatRoom_{roomIdInContext}").SendAsync("ResUpdateName", UserNew);
+                }
+                return rlt;
             }
             catch (Exception ex)
             {
@@ -93,13 +93,13 @@ namespace DemoChatSignalR.Server
         /// <param name="GuidUser"></param>
         /// <param name="isIn"></param>
         /// <returns></returns>
-        public async Task<Result> NotfiMemberGroup(string connectionId, string GuidUser, bool isIn)
+        public async Task<Result> NotfiOnlineUser(OnlineUserDto OnlineUser)
         {
             try
             {
                 if (roomIdInContext == Guid.Empty)
                     return "Guid room is empty";
-                await Clients.Group($"ChatRoom_{roomIdInContext}").SendAsync("ReceiveNotfiMemberGroup", isIn ? "online" : "offline", GuidUser, connectionId);
+                await Clients.Group($"ChatRoom_{roomIdInContext}").SendAsync("ReceiveNotfiMemberGroup", OnlineUser);
 
                 return true;
             }
@@ -115,7 +115,7 @@ namespace DemoChatSignalR.Server
         /// <returns></returns>
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            await NotfiMemberGroup(Context.ConnectionId, GuidUserInContext.ToString(), false);
+            await NotfiOnlineUser(new() { ConnectionId = Context.ConnectionId, GuidUser = GuidUserInContext.ToString(), IsOnline = false });
             await base.OnDisconnectedAsync(exception);
         }
 

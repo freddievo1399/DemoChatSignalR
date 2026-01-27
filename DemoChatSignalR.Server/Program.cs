@@ -39,19 +39,19 @@ namespace DemoChatSignalR.Server
             builder.Services.AddScoped<CacheChatService>();
 
             var app = builder.Build();
+            app.UseCors("DynamicCors");
+            //app.UseAuthorization();
+            //app.UseAuthentication();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-
             }
             app.UseSwagger();
             app.UseSwaggerUI();
-            app.UseHttpsRedirection();
-            app.UseCors("DynamicCors");
+            //app.UseHttpsRedirection();
 
             app.MapHub<HubChatRoom>("/chatroomHub");
-
 
 
             app.MapControllers();

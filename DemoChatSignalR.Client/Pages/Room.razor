@@ -187,6 +187,8 @@
 
         await Swal.Close();
         StateHasChanged();
+        await InvokeLoadMess();
+
     }
     private async Task InvokeLoadMess()
     {
@@ -214,7 +216,6 @@
             nav.NavigateTo("/");
         }
         infoRoom = rltRoom.Item;
-        await InvokeLoadMess();
         await Swal.Close();
     }
     private async void UpdateUser()

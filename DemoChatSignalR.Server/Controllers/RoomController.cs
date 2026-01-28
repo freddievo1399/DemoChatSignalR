@@ -21,6 +21,16 @@ public class RoomController(CacheChatService cacheChatService) : ControllerBase,
     [HttpGet(nameof(GetInfoRoom))]
     public async Task<ResultOf<InfoRoomDto>> GetInfoRoom([FromQuery] Guid guid)
     {
+        Guid GuidDemo = Guid.Parse("0a0852cc-1ceb-442c-ae11-72dba99fa01c");
+        if (guid == GuidDemo)
+        {
+            var rltDemo = await cacheChatService.CreateRoomAsync(guid, "Demo");
+            if (rltDemo.Success)
+            {
+                return rltDemo.Item;
+            }
+            return rltDemo.Message;
+        }
         var rlt = await cacheChatService.GetRoomAsync(guid);
         if (!rlt.Success)
         {

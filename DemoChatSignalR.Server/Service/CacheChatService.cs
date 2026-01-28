@@ -23,10 +23,19 @@ public class CacheChatService(IMemoryCache memoryCache)
     }
     public async Task<ResultOf<RoomChacheModel>> CreateRoomAsync(Guid GuidRoom, string NameRoom)
     {
-        var room = new RoomChacheModel() { TotalCount = 1, Guid = GuidRoom, Name = NameRoom }; ;
-        MemoryCache.Set(GuidRoom, room, TimeSpan.FromMinutes(40));
+        var RoomRlt = await GetRoomAsync(GuidRoom);
+        var Room = RoomRlt!.Item!;
+        if (!RoomRlt!.Success || Room == null)
+        {
+            Room = new RoomChacheModel() { TotalCount = 1, Guid = GuidRoom, Name = NameRoom }; ;
+        }
+        if (Room.Name == NameRoom)
+        {
+            return Room;
+        }
+        MemoryCache.Set(GuidRoom, Room, TimeSpan.FromMinutes(40));
         await AddMessageAsync(GuidRoom, $"Room {NameRoom} created", "System");
-        return room;
+        return Room;
     }
 
     public async Task<ResultsOf<MessageChacheModel>> GetMessages(Guid GuidRoom, int FromIndex, int ToIndex)

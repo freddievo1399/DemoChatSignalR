@@ -110,10 +110,14 @@
         }
         @foreach (var mess in infoMessDtos)
         {
-            var GuidUser = mess.UserGuid.ToString();
+            var messTemp = mess;
+            var GuidUser = messTemp.UserGuid.ToString();
             <div class="message @(classFromUser(GuidUser)) @($"mess_id_{mess.Id}")">
                 <div class="bubble">
                     @mess.Message
+                </div>
+                <div class="DateTime">
+                    @mess.DateTimeSent
                 </div>
                 <div class="userName">
                     @(NameFromGuidUser(GuidUser))
@@ -161,7 +165,7 @@
     }
     private string NameFromGuidUser(string UserGuid)
     {
-        var user = infoRoom!.Users.FirstOrDefault();
+        var user = infoRoom!.Users.FirstOrDefault(x => x.ToString() == UserGuid);
         if (user != null)
         {
             return user.UserName;
@@ -240,6 +244,7 @@
             await ConnectionHub();
         }
         JoinRoom();
+        await InvokeLoadMess();
         await Swal.Close();
         await mudDialog.CloseAsync();
     }

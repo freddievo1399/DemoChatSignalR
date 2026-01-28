@@ -57,11 +57,11 @@
         </MudDrawerHeader>
         <MudNavMenu>
             @foreach (var user in infoRoom?.Users ?? new())
-                {
-            var userTemp = user;
-            <MudNavLink Match="NavLinkMatch.All" Disabled="user.UserGuid==infoUser.UserGuid"> 
-                @user.UserName
-                    @if (user.IsActive || user.UserGuid==infoUser.UserGuid)
+            {
+                var userTemp = user;
+                <MudNavLink Match="NavLinkMatch.All" Disabled="user.UserGuid == infoUser.UserGuid">
+                    @user.UserName
+                    @if (user.IsActive || user.UserGuid == infoUser.UserGuid)
                     {
                         <MudIcon Icon="@Icons.Custom.Uncategorized.Radioactive" Color="Color.Primary" />
                     }
@@ -174,7 +174,11 @@
 
     protected override async void OnInitialized()
     {
-        LoadInfoRoom();
+        var isLoadRoomSucces = await LoadInfoRoom();
+        if (!isLoadRoomSucces)
+        {
+            return;
+        }
         var isUserSuccess = await LoadInfoUser();
         if (!isUserSuccess)
         {
@@ -194,6 +198,7 @@
     {
         objRef = DotNetObjectReference.Create(this);
         await JS.InvokeVoidAsync("observeScrollEnd", "#scrollTop", objRef);
+        StateHasChanged();
     }
     private async void ToggleDrawer()
     {
@@ -202,21 +207,24 @@
     }
 
     #region Load Info Room & User
-    private async void LoadInfoRoom()
+    private async Task<bool> LoadInfoRoom()
     {
         await Swal.Loading("Load thông tin phòng");
         if (!RoomId.HasValue)
         {
             nav.NavigateTo("/");
-            return;
+            return false;
         }
         var rltRoom = await roomService.Excute(x => x.GetInfoRoom(RoomId.Value));
         if (!rltRoom.Success)
         {
+            await Swal.Info("Phòng không tồn tại", "Vui lòng kiểm tra lại");
             nav.NavigateTo("/");
+            return false;
         }
         infoRoom = rltRoom.Item;
         await Swal.Close();
+        return true;
     }
     private async void UpdateUser()
     {
@@ -225,7 +233,7 @@
         await JS.InvokeVoidAsync("localStorage.setItem", "UserName", infoUser.UserName);
         if (infoRoom == null)
         {
-            LoadInfoRoom();
+            await LoadInfoRoom();
         }
         if (hubConnection == null)
         {
@@ -392,7 +400,7 @@
         var userTemp = infoRoom!.Users.FirstOrDefault(x => x.UserGuid == infoOnlUserDto.GuidUser);
         if (userTemp == null)
         {
-            LoadInfoRoom();
+            await LoadInfoRoom();
             userTemp = infoRoom!.Users.FirstOrDefault(x => x.UserGuid == infoOnlUserDto.GuidUser);
             userTemp!.IsActive = infoOnlUserDto.IsOnline;
         }

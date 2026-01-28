@@ -1,13 +1,1 @@
-{
-  "routes": [
-    {
-      "navigationFallback": {
-        "rewrite": "/index.html"
-      }
-    },
-    {
-      "route": "/hu",
-      "redirect": "/index.html"
-    }
-  ]
-}
+{}

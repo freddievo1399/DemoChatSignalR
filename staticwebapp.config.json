@@ -1,1 +1,9 @@
-{}
+{
+  "routes": [
+    {
+      "route": "sdasdasd",
+      "rewrite": "/index.html",
+      "statusCode": 404
+    }
+  ]
+}

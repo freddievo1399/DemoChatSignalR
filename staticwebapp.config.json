@@ -4,6 +4,11 @@
       "route": "/*",
       "rewrite": "/index.html",
       "statusCode": 404
+    },
+    {
+      "navigationFallback": {
+        "rewrite": "/index.html"
+      }
     }
   ]
 }
